@@ -1,0 +1,178 @@
+﻿@using CRUDEXAMPLE.Data.Models
+@model List<TaskDataModel>
+@{
+    ViewData["Title"] = "Home Page";
+}
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.4/css/dataTables.dataTables.css" asp-append-version="true" />
+<div id="modalTaskHolder" aria-hidden="true"></div>
+<div class="text-center">
+    <button class="btn btn-success" id="addTask">Görev Ekle</button>
+    <table id="taskTable">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Görev Adı</th>
+            <th>Son Tarih</th>
+			<th>Durum</th>
+            <th>İşlemler</th>
+			
+        </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.Name</td>
+                    <td>@item.LastTime.ToString("dd/MM/yyyy HH:mm")</td>
+					<td>@{
+							string statusText = "";
+							switch (@item.Type.ToString())
+							{
+								case "waiting":
+									statusText = "Bekliyor";
+									break;
+								case "continues":
+									statusText = "Devam Ediyor";
+									break;
+								case "completed":
+									statusText = "Tamamlandı";
+									break;
+								default:
+									statusText = "Bilinmiyor"; 
+									break;
+							}
+					}
+					@statusText	
+				</td>
+                    <td> 
+                        <button class="btn btn-primary edit" data-id="@item.Id">Düzenle</button>
+                        <button class="btn btn-danger delete" data-id="@item.Id">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@section Scripts{
+    <script src="//cdn.datatables.net/2.1.4/js/dataTables.min.js"> </script>
+    <script>
+        $(document).ready(function () {
+            let table = new DataTable('#taskTable', {
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/2.1.4/i18n/tr.json',
+                }
+            });
+            const taskHolderDiv = $('#modalTaskHolder');
+            $(document).on('click', '#addTask',
+                function (e) {
+                    e.preventDefault();
+                    $.get('/Home/Add').done(function (data) {
+                        taskHolderDiv.html(data);
+                        taskHolderDiv.find('.modal').modal('show');
+                    }).fail(function () {
+                        toastr.error("Bir hata oluştu.");
+                    });
+                })
+
+			$(document).on('click', '.delete',
+				function (e) {
+					e.preventDefault();
+					const id = $(this).attr('data-id');
+					debugger;
+					Swal.fire({
+						text: "Silmek istediğinize emin misiniz ?",
+						icon: "warning",
+						showCancelButton: true,
+						buttonsStyling: false,
+						confirmButtonText: "Evet, silmek istiyorum!",
+						cancelButtonText: "Hayır",
+						customClass: {
+							confirmButton: "btn fw-bold btn-danger",
+							cancelButton: "btn fw-bold btn-active-light-primary"
+						}
+					}).then(function (result) {
+						if (result.value) {
+
+							$.ajax({
+								url: '/Home/Delete/' + id,
+								type: 'DELETE',
+								beforeSend: function () {
+									Swal.fire({
+										text: "Siliniyor...",
+										icon: "info",
+										buttonsStyling: false,
+										showConfirmButton: false,
+										allowOutsideClick: false,
+										allowEscapeKey: false,
+										customClass: {
+											popup: "swal2-noanimation"
+										},
+										onOpen: function () {
+											Swal.showLoading();
+										}
+									});
+								},
+								success: function (result) {
+									Swal.fire({
+										text: "Başarıyla Silindi!",
+										icon: "success",
+										buttonsStyling: false,
+										confirmButtonText: "Tamam",
+										customClass: {
+											confirmButton: "btn fw-bold btn-primary",
+										}
+									}).then(function () {
+										// delete row data from server and re-draw datatable
+										location.reload();
+									});
+								},
+								error: function (xhr, status, error) {
+									var errorMessage = xhr.responseJSON.message;
+									// Silme işlemi sırasında bir hata oluştuğunda yapılacak işlemler
+									Swal.fire({
+										text: errorMessage,
+										icon: "error",
+										buttonsStyling: false,
+										confirmButtonText: "Tamam",
+										customClass: {
+											confirmButton: "btn fw-bold btn-primary",
+										}
+									});
+								}
+							});
+
+
+						} else if (result.dismiss === 'cancel') {
+							Swal.fire({
+								text: "Silmekten vazgeçildi.",
+								icon: "error",
+								buttonsStyling: false,
+								confirmButtonText: "Tamam",
+								customClass: {
+									confirmButton: "btn fw-bold btn-primary",
+								}
+							});
+						}
+
+					})
+				})
+
+			$(document).on('click', '.edit',
+				function (e) {
+					e.preventDefault();
+					const id = $(this).attr('data-id');
+					debugger;
+					$.get('/Home/Add?id=' + id).done(function (data) {
+						taskHolderDiv.html(data);
+						taskHolderDiv.find('.modal').modal('show');
+					}).fail(function () {
+						toastr.error("Bir hata oluştu.");
+					});
+				})
+        })
+    </script>
+}
+
+
+

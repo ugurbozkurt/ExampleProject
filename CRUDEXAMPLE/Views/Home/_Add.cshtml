@@ -1,0 +1,155 @@
+﻿@using CRUDEXAMPLE.Data.Enums
+@using CRUDEXAMPLE.Data.Models
+@model TaskDataModel
+<div id="_addPartial" class="modal fade" tabindex="-1" aria-hidden="true">
+    <!--begin::Modal dialog-->
+    <div class="modal-dialog modal-dialog-centered mw-650px">
+        <!--begin::Modal content-->
+        <div class="modal-content">
+            <!--begin::Form-->
+            <form class="form" action="#" id="taskAddForm">
+                <input hidden id="Id" asp-for="Id" name="Id" />
+                <!--begin::Modal header-->
+                <div class="modal-header" id="kt_modal_add_customer_header">
+                    <!--begin::Modal title-->
+                    <h2>@((Model == null || Model.Id == null) ? "Görev Ekleniyor.." : $"{Model.Name} Düzenleme")</h2>
+                    <!--end::Modal title-->
+                    <!--begin::Close-->
+                    <div id="kt_modal_add_customer_close" class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                        <i class="ki-outline ki-cross fs-1"></i>
+                    </div>
+                    <!--end::Close-->
+                </div>
+                <!--end::Modal header-->
+                <!--begin::Modal body-->
+                <div class="modal-body py-10 px-lg-17">
+                    <!--begin::Scroll-->
+                    <div class="scroll-y me-n7 pe-7" id="kt_modal_add_customer_scroll" data-kt-scroll="true" data-kt-scroll-activate="{default: false, lg: true}" data-kt-scroll-max-height="auto" data-kt-scroll-dependencies="#kt_modal_add_customer_header" data-kt-scroll-wrappers="#kt_modal_add_customer_scroll" data-kt-scroll-offset="300px">
+                        <!--begin::Input group-->
+                        <form id="addTask">
+                            <div class="form-group">
+                                <label for="exampleInputEmail1">Görev İsmi</label>
+                                <input required type="text" autocomplete="off" class="form-control" asp-for="Name">
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleInputPassword1">Son Tarih</label>
+                                <input required type="datetime-local" class="form-control" asp-for="LastTime">
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleInputPassword1">Açıklama</label>
+                                <textarea required class="form-control" asp-for="Description"></textarea>
+                            </div>
+                            @if (Model?.Id != null)
+                            {
+                                <div class="form-group">
+                                    <label for="exampleInputPassword1">Statü</label>
+                                    <select class="form-select" asp-for="Type">
+                                        <option value="@TaskDataType.waiting">Bekliyor</option>
+                                        <option value="@TaskDataType.completed">Tamamlandı</option>
+                                        <option value="@TaskDataType.continues">Devam ediyor</option>
+                                    </select>
+                                </div>
+                            }
+                        </form>
+                    </div>
+                    <!--end::Scroll-->
+                </div>
+                <!--end::Modal body-->
+                <!--begin::Modal footer-->
+                <div class="modal-footer flex-center">
+                    <!--begin::Button-->
+                    <button data-bs-dismiss="modal" class="btn btn-light me-3">Vazgeç</button>
+                    <!--end::Button-->
+                    <!--begin::Button-->
+                    <button type="submit" id="taskAddSbmtBtn" class="btn btn-primary">
+                        <span class="indicator-label">Kaydet</span>
+                    </button>
+                    <!--end::Button-->
+                </div>
+                <!--end::Modal footer-->
+            </form>
+            <!--end::Form-->
+        </div>
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        $(document).on('keypress', partialViewEnterHandler);
+
+        function partialViewEnterHandler(event) { // Enter'a basınca kaydet butonuna tetikler.
+            if (event.which === 13) {
+                event.preventDefault();
+                $('#taskAddSbmtBtn').click();
+            }
+        }
+
+        const form = $('#taskAddForm');
+
+        $(document).on('click', '#taskAddSbmtBtn', function (event) {
+            event.preventDefault();
+
+            // Görev İsmi alanı boşsa, hata mesajı göster.
+            if (!$('input[name="Name"]').val()) {
+                Swal.fire({
+                    text: "Görev ismi boş olamaz!",
+                    icon: "error",
+                    buttonsStyling: false,
+                    confirmButtonText: "Tamam",
+                    customClass: {
+                        confirmButton: "btn fw-bold btn-primary",
+                    }
+                });
+                return; // Formun gönderilmesini durdur.
+            }
+
+            Swal.fire({
+                title: 'Kaydetmek istediğinize emin misiniz?',
+                text: "Kaydetmek istediğinize emin misiniz?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Evet, Eminim!',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const dataToSend = form.serialize();
+                    console.log(dataToSend);
+
+                    $.ajax({
+                        url: '/Home/Add',
+                        type: 'POST',
+                        dataType: 'json',
+                        contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                        data: dataToSend,
+                        success: function (res) {
+                            Swal.fire({
+                                text: "Başarıyla Kaydedildi!",
+                                icon: "success",
+                                buttonsStyling: false,
+                                confirmButtonText: "Tamam",
+                                customClass: {
+                                    confirmButton: "btn fw-bold btn-primary",
+                                }
+                            }).then(function () {
+                                location.reload();
+                            });
+                        },
+                        error: function (err) {
+                            var errorMessage = err.responseJSON.error.message;
+                            Swal.fire({
+                                text: errorMessage,
+                                icon: "error",
+                                buttonsStyling: false,
+                                confirmButtonText: "Tamam",
+                                customClass: {
+                                    confirmButton: "btn fw-bold btn-primary",
+                                }
+                            });
+                        }
+                    });
+                }
+            })
+        })
+    });
+</script>
